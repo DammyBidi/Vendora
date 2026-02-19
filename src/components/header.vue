@@ -2,7 +2,7 @@
   <header class="border-b sticky top-0 bg-white z-50">
     <div class="max-w-[1400px] mx-auto px-6 h-[90px] flex items-center justify-between">
       <!-- LOGO -->
-      <h1 class="text-[26px] font-medium tracking-widest">LEZADA</h1>
+      <h1 class="text-[26px] font-medium tracking-widest">VEDORA</h1>
 
       <!-- NAV -->
       <nav class="hidden lg:flex items-center gap-10 text-sm">

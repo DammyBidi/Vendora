@@ -4,7 +4,7 @@
     <header class="border-b">
       <div class="max-w-[1200px] mx-auto px-6 py-5 flex items-center justify-between">
         <h1 class="text-lg font-semibold tracking-tight">
-          Lezada - Multipurpose eCommerce Shopify Theme
+          VEDORA - Multipurpose eCommerce Shopify Theme
         </h1>
 
         <div class="text-xl">

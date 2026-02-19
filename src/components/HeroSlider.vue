@@ -2,11 +2,11 @@
   <section class="relative overflow-hidden py-10">
     <Swiper
       :modules="[Navigation, Autoplay]"
-      :slides-per-view="1.4"
+      :slides-per-view="defaultSlidesPerView"
       :centered-slides="true"
-      :loop="true"
-      :loop-additional-slides="slides.length"
-      :loop-fill-group-with-blank="false"
+      :loop="isLoopEnabled"
+      :loop-additional-slides="loopAdditionalSlides"
+      :loop-fill-group-with-blank="true"
       :watch-slides-progress="true"
       :space-between="190"
       :speed="1000"
@@ -14,12 +14,9 @@
       :grab-cursor="true"
       navigation
       class="lezada-hero"
-      :breakpoints="{
-        768: { slidesPerView: 1.8 },
-        1280: { slidesPerView: 2.3 },
-      }"
+      :breakpoints="breakpointsParam"
     >
-      <SwiperSlide v-for="(slide, i) in slides" :key="i">
+      <SwiperSlide v-for="(slide, i) in renderSlides" :key="i">
         <div
           class="h-[320px] md:h-[360px] text-left flex items-center  relative"
           :class="slide.bg"
@@ -92,6 +89,29 @@ const slides = [
     labelColor: "text-[#7da08c]",
   },
 ];
+
+const defaultSlidesPerView = 1.4;
+const breakpointsParam = {
+  768: { slidesPerView: 1.8 },
+  1280: { slidesPerView: 2.3 },
+};
+
+const maxSlidesPerView = Math.max(
+  defaultSlidesPerView,
+  ...Object.values(breakpointsParam).map((b) => b.slidesPerView)
+);
+
+const requiredSlidesForLoop = Math.ceil(maxSlidesPerView) + 1;
+const isLoopEnabled = slides.length >= requiredSlidesForLoop;
+
+// duplicate all slides when loop is enabled to avoid blank gaps
+const loopAdditionalSlides = isLoopEnabled ? slides.length : 0;
+
+// when looping, duplicate slides in the render array so navigation never
+// reaches a real end and shows blank space
+const renderSlides = isLoopEnabled
+  ? slides.concat(slides.map((s) => ({ ...s })))
+  : slides;
 </script>
 
 <style>

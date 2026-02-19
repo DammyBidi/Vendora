@@ -259,7 +259,7 @@
           <h4 class="font-semibold mb-3">Contact</h4>
           <p class="text-gray-500">
             (+00) 123 567 990<br />
-            contact@lezada.com
+            contact@vedora.com
           </p>
         </div>
 
