@@ -86,7 +86,7 @@ const slides = [
     image:
       "https://lezada-demo.myshopify.com/cdn/shop/files/banner-carousel-4_1170x.jpg?v=1613746686",
 
-    labelColor: "text-[#7da08c]",
+    labelColor: "text-[#7da08c]", 
   },
 ];
 
