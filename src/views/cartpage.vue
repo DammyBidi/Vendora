@@ -170,12 +170,13 @@
               </label>
 
               <button
-                class="w-full py-4 bg-[#e8a0a0] text-white text-sm uppercase tracking-wider hover:bg-[#d89090] transition rounded-sm"
-                :class="{ 'opacity-50 cursor-not-allowed': !agreeTerms }"
-                :disabled="!agreeTerms"
-              >
-                Proceed to Checkout
-              </button>
+                  @click="handleProceedToCheckout"
+                  class="w-full py-4 bg-[#e8a0a0] text-white text-sm uppercase tracking-wider hover:bg-[#d89090] transition rounded-sm"
+                  :class="{ 'opacity-50 cursor-not-allowed': !agreeTerms }"
+                  :disabled="!agreeTerms"
+                >
+                  Proceed to Checkout
+                </button>
             </div>
           </div>
         </div>
@@ -207,8 +208,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import useCartStore from '@/stores/cart'
+import { useRouter } from 'vue-router'
+import authService from '@/services/authService'
+import { useToast } from 'vue-toastification'
 
 const store = useCartStore()
 const agreeTerms = ref(false)
@@ -278,5 +282,18 @@ const removeItem = async (index) => {
 
 const clearCart = async () => {
   await store.clearCart()
+}
+
+const router = useRouter()
+const toast = useToast()
+
+const handleProceedToCheckout = () => {
+  if (!agreeTerms.value) return
+  if (!authService.isLoggedIn()) {
+    toast.info('Please login to proceed to checkout')
+    router.push({ name: 'login', query: { redirect: '/checkout' } })
+    return
+  }
+  router.push({ name: 'checkout' })
 }
 </script>

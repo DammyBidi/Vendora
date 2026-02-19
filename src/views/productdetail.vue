@@ -121,11 +121,20 @@
 
           <!-- Add to Cart + Wishlist -->
           <div class="flex gap-3 pt-2">
-            <button class="flex-1 bg-[#3d3d3d] text-white py-3.5 text-xs uppercase tracking-wider hover:bg-black transition">
-              Add to Cart
+            <button
+              @click="handleAddToCart"
+              :disabled="adding"
+              class="flex-1 bg-[#3d3d3d] text-white py-3.5 text-xs uppercase tracking-wider hover:bg-black transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <span v-if="adding">Adding...</span>
+              <span v-else>Add to Cart</span>
             </button>
-            <button class="w-12 h-12 border border-gray-300 flex items-center justify-center hover:border-gray-500 transition">
-              <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button
+              @click="handleAddToWishlist"
+              :disabled="wishLoading"
+              :class="[ 'w-12 h-12 border flex items-center justify-center transition', wishAdded ? 'border-red-400 text-red-500' : 'border-gray-300 hover:border-gray-500' ]"
+            >
+              <svg class="w-5 h-5" :class="wishAdded ? 'fill-red-500 text-red-500' : 'text-gray-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
               </svg>
             </button>
@@ -322,8 +331,11 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { productService } from '@/services'
+import useCartStore from '@/stores/cart'
+import useWishlistStore from '@/stores/wishlist'
 
 const route = useRoute()
 const product = ref({
@@ -360,6 +372,16 @@ const agreeTerms = ref(false)
 const activeTab = ref('description')
 const loading = ref(false)
 const error = ref('')
+
+const cartStore = useCartStore()
+const wishlistStore = useWishlistStore()
+const router = useRouter()
+const toast = useToast()
+import authService from '@/services/authService'
+
+const adding = ref(false)
+const wishLoading = ref(false)
+const wishAdded = ref(false)
 
 const increaseQty = () => { quantity.value++ }
 const decreaseQty = () => { if (quantity.value > 1) quantity.value-- }
@@ -461,6 +483,41 @@ onMounted(() => {
   const id = route.params.id
   if (id) fetchProduct(id)
 })
+
+const handleAddToCart = async () => {
+  if (!product.value || !product.value.id) return
+  adding.value = true
+  try {
+    if (!authService.isLoggedIn()) {
+      toast.info('Please login to add items to your cart')
+      router.push({ name: 'login', query: { redirect: route.fullPath } })
+      return
+    }
+    await cartStore.addToCart(product.value.id, quantity.value)
+  } catch (e) {
+    console.error('Failed to add to cart', e)
+  } finally {
+    adding.value = false
+  }
+}
+
+const handleAddToWishlist = async () => {
+  if (!product.value || !product.value.id) return
+  wishLoading.value = true
+  try {
+    if (!authService.isLoggedIn()) {
+      toast.info('Please login to add items to your wishlist')
+      router.push({ name: 'login', query: { redirect: route.fullPath } })
+      return
+    }
+    await wishlistStore.addToWishlist(product.value.id)
+    wishAdded.value = true
+  } catch (e) {
+    console.error('Failed to add to wishlist', e)
+  } finally {
+    wishLoading.value = false
+  }
+}
 
 // Placeholder product lists (kept as in original file)
 const relatedProducts = ref([])

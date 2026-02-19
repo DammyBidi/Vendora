@@ -86,7 +86,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import Header from "@/components/header.vue";
 import HeroSlider from "@/components/HeroSlider.vue";
 import ProductCard from "@/components/ProductCard.vue";
@@ -98,12 +98,13 @@ const products = ref([]);
 const loading = ref(false);
 const error = ref("");
 
-// Fetch products from API
-const fetchProducts = async () => {
+// Fetch products from API for a given tab
+const fetchProducts = async (tab = activeTab.value) => {
   loading.value = true;
   error.value = "";
   try {
-    const { data } = await productService.getAll();
+    const tabParam = tab ? tab.toLowerCase() : "";
+    const { data } = await productService.getAll({ tab: tabParam });
     products.value = data.data || [];
   } catch (err) {
     error.value = "Failed to load products";
@@ -117,9 +118,13 @@ onMounted(() => {
   fetchProducts();
 });
 
+// Refetch when the active tab changes
+watch(activeTab, (newTab) => {
+  fetchProducts(newTab);
+});
+
 const filteredProducts = computed(() => {
-  // For now, show all products since API doesn't have tags
-  // You can add filtering logic based on your needs
+  // show first 6 products (API may already filter by tab)
   return products.value.slice(0, 6);
 });
 </script>

@@ -98,13 +98,14 @@ const continueShopping = () => {
 }
 
 const viewCart = () => {
+  router.push({ name: 'cart' })
   store.clearModal()
-  router.push({ name: 'cartpage' })
 }
 
 const checkout = () => {
-  store.clearModal()
+  // navigate first, then clear modal to avoid unmounting before navigation
   router.push({ name: 'checkout' })
+  store.clearModal()
 }
 </script>
 

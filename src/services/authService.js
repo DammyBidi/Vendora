@@ -1,4 +1,5 @@
 import api from './api'
+import { setAuthToken } from './api'
 
 export const authService = {
   login(credentials) {
@@ -9,9 +10,18 @@ export const authService = {
     return api.post('/register', userData)
   },
 
-  logout() {
-    localStorage.removeItem('token')
-    return api.post('/auth/logout')
+  async logout() {
+    try {
+      await api.post('/logout')
+    } catch (e) {
+      // ignore network errors; still remove token client-side
+    }
+    try { localStorage.removeItem('token') } catch (_) {}
+    setAuthToken(null)
+  },
+
+  getUser() {
+    return api.get('/user')
   },
 
   getProfile() {
@@ -20,6 +30,10 @@ export const authService = {
 
   updateProfile(userData) {
     return api.put('/auth/profile', userData)
+  },
+  // quick client-side check for presence of token
+  isLoggedIn() {
+    return !!localStorage.getItem('token')
   },
 }
 

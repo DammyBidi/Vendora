@@ -133,8 +133,11 @@
       <!-- ICONS -->
       <div class="flex items-center gap-6 text-lg">
         <i class="ri-search-line cursor-pointer hover:text-gray-600 transition"></i>
-        <RouterLink :to="{ name: 'login' }" class="hover:text-gray-600 transition">
+        <RouterLink v-if="!isLoggedIn()" :to="{ name: 'login' }" class="hover:text-gray-600 transition">
           <i class="ri-user-line"></i>
+        </RouterLink>
+        <RouterLink v-else :to="{ name: 'account' }" class="hover:text-gray-600 transition">
+          <i class="ri-user-fill"></i>
         </RouterLink>
         <RouterLink :to="{ name: 'wishlist' }" class="hover:text-gray-600 transition">
           <i class="ri-heart-line"></i>
@@ -220,6 +223,7 @@
           <!-- Buttons -->
           <div class="space-y-3">
             <button
+              @click="handleCheckout"
               class="w-full py-3.5 bg-[#f5a9a9] text-white text-sm uppercase tracking-wider hover:bg-[#e89999] transition"
               :class="{ 'opacity-50 cursor-not-allowed': !agreeTerms }"
               :disabled="!agreeTerms"
@@ -306,7 +310,21 @@
 
           <!-- Featured Product -->
           <div class="w-[280px]">
-            <a href="#" class="block group">
+            <RouterLink v-if="featuredProduct" :to="{ name: 'productdetail', params: { id: featuredProduct.id } }" class="block group">
+              <div class="bg-white aspect-square flex items-center justify-center p-8 mb-4 transition group-hover:opacity-90">
+                <img
+                  :src="featuredProduct.image || 'https://via.placeholder.com/200x200/9b59b6/ffffff?text=HERBIVORE+MOON+FRUIT'"
+                  :alt="featuredProduct.name || 'Featured Product'"
+                  class="w-32 h-32 object-contain"
+                />
+              </div>
+              <h4 class="text-sm font-medium mb-2 text-gray-800 group-hover:text-black transition">{{ featuredProduct.name }}</h4>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-gray-900">${{ (parseFloat(featuredProduct.price) || 0).toFixed(2) }}</span>
+                <span v-if="featuredProduct.originalPrice" class="text-sm text-gray-400 line-through">${{ (parseFloat(featuredProduct.originalPrice) || 0).toFixed(2) }}</span>
+              </div>
+            </RouterLink>
+            <div v-else class="block group">
               <div class="bg-white aspect-square flex items-center justify-center p-8 mb-4 transition group-hover:opacity-90">
                 <img
                   src="https://via.placeholder.com/200x200/9b59b6/ffffff?text=HERBIVORE+MOON+FRUIT"
@@ -319,7 +337,7 @@
                 <span class="text-sm font-semibold text-gray-900">$39.00</span>
                 <span class="text-sm text-gray-400 line-through">$60.00</span>
               </div>
-            </a>
+            </div>
           </div>
         </div>
       </div>
@@ -328,8 +346,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import { RouterLink } from "vue-router";
+import { ref, computed, onMounted } from "vue";
+import { useRouter, RouterLink } from "vue-router";
+import { useToast } from 'vue-toastification'
+import useCartStore from '@/stores/cart'
+import authService from '@/services/authService'
+import { productService } from '@/services'
+
 
 const menu = ["Home", "Shop", "Catalog", "Blog", "Pages"];
 const showCatalogDropdown = ref(false);
@@ -342,31 +365,64 @@ let catalogTimeout = null;
 let blogTimeout = null;
 let pagesTimeout = null;
 
-// Sample cart items
-const cartItems = ref([
-  {
-    id: 11,
-    name: 'Video Side Ottoman',
-    price: 39.00,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&h=200&fit=crop'
-  },
-  {
-    id: 10,
-    name: 'High-waist Trousers - white',
-    price: 19.00,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=200&fit=crop'
-  }
-]);
+const cartStore = useCartStore()
+const router = useRouter()
+const toast = useToast()
+const featuredProduct = ref({
+  id: 17,
+  name: 'Product 17',
+  image: 'https://via.placeholder.com/200x200/9b59b6/ffffff?text=Product+17',
+  price: 39.0,
+  originalPrice: 60.0,
+})
+const isLoggedIn = () => authService.isLoggedIn()
+
+const cartItems = computed(() => {
+  const raw = cartStore.items || []
+  return raw.map(i => ({
+    ...i,
+    price: parseFloat(i.price) || 0,
+    quantity: parseInt(i.quantity || 0, 10) || 0,
+  }))
+})
 
 const cartTotal = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-});
+  if (typeof cartStore.totalPrice === 'number' && !isNaN(cartStore.totalPrice)) {
+    return cartStore.totalPrice
+  }
+  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+})
 
-const removeFromCart = (index) => {
-  cartItems.value.splice(index, 1);
-};
+const removeFromCart = async (index) => {
+  const item = cartItems.value[index]
+  if (!item) return
+  try {
+    await cartStore.removeItem(item.id)
+  } catch (e) {
+    // ignore for now
+  }
+}
+
+onMounted(async () => {
+  cartStore.fetchCart().catch(() => {})
+  // no-op: keep existing authService login state handling
+  // try to fetch real product 17, fallback to static
+  try {
+    const res = await productService.getById(17)
+    const data = res.data?.data || res.data || null
+    if (data) {
+      featuredProduct.value = {
+        id: data.id || 17,
+        name: data.name || 'Product 17',
+        image: data.image || data.hover_image || featuredProduct.value.image,
+        price: parseFloat(data.price) || featuredProduct.value.price,
+        originalPrice: data.originalPrice ? parseFloat(data.originalPrice) : featuredProduct.value.originalPrice,
+      }
+    }
+  } catch (e) {
+    // keep static fallback
+  }
+})
 
 const blogLayouts = [
   { name: 'Standard Layout' },
@@ -390,18 +446,15 @@ const pagesMenu = [
 ];
 
 const handleCatalogMouseLeave = (event) => {
-  // Check if we're moving to the dropdown
   const relatedTarget = event.relatedTarget;
   if (relatedTarget && relatedTarget.closest('.catalog-dropdown')) {
     return; // Don't close if moving to dropdown
   }
-  // Add a small delay before closing to allow moving to dropdown
   catalogTimeout = setTimeout(() => {
     showCatalogDropdown.value = false;
   }, 150);
 };
 
-// Clear timeout if mouse re-enters
 const handleCatalogMouseEnter = () => {
   if (catalogTimeout) {
     clearTimeout(catalogTimeout);
@@ -446,6 +499,19 @@ const handlePagesMouseEnter = () => {
   }
   showPagesDropdown.value = true;
 };
+
+const handleCheckout = () => {
+  if (!agreeTerms.value) return
+  if (!authService.isLoggedIn()) {
+    const toast = useToast()
+    toast.info('Please login to proceed to checkout')
+    router.push({ name: 'login', query: { redirect: '/checkout' } })
+    showCartSidebar.value = false
+    return
+  }
+  router.push({ name: 'checkout' })
+  showCartSidebar.value = false
+}
 </script>
 
 <style scoped>

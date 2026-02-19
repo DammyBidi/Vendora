@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
+import cartService from '@/services/cartService'
 
 export const useCartStore = defineStore('cart', {
   state: () => ({
@@ -74,7 +75,7 @@ export const useCartStore = defineStore('cart', {
       this.loading = true
       this.error = null
       try {
-        await api.post('/cart/remove', { item_id: itemId })
+        await api.delete(`/cart/${itemId}`)
         this.items = this.items.filter(i => i.id !== itemId)
         this._recalculate()
       } catch (e) {
@@ -88,14 +89,25 @@ export const useCartStore = defineStore('cart', {
       this.loading = true
       this.error = null
       try {
-        // Attempt backend update; endpoint uses /cart/update (expectation)
-        await api.post('/cart/update', { product_id, quantity })
-        // update local state optimistically
-        const idx = this.items.findIndex(i => i.id === product_id)
-        if (idx > -1) {
-          this.items[idx] = { ...this.items[idx], quantity }
+        const res = await cartService.updateQuantity(product_id, quantity)
+        const data = res.data?.data || res.data
+
+        if (data) {
+          const idx = this.items.findIndex(i => i.id === data.id || i.id === product_id)
+          const normalized = {
+            ...data,
+            price: parseFloat(data.price) || 0,
+            quantity: parseInt(data.quantity || data.qty || quantity || 0, 10) || 0,
+          }
+
+          if (idx > -1) {
+            this.items[idx] = { ...this.items[idx], ...normalized }
+          } else {
+            this.items.unshift(normalized)
+          }
+
+          this._recalculate()
         }
-        this._recalculate()
       } catch (e) {
         this.error = e
         throw e

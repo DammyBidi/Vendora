@@ -71,10 +71,14 @@
 
 <script setup>
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { authService } from '@/services'
+import { setAuthToken } from '@/services/api'
+import { useToast } from 'vue-toastification'
 
 const router = useRouter()
+const route = useRoute()
+const toast = useToast()
 
 const email = ref('')
 const password = ref('')
@@ -95,15 +99,18 @@ const handleLogin = async () => {
     
     // Store the token
     localStorage.setItem('token', data.token)
+    // set token for api requests
+    setAuthToken(data.token)
     
     success.value = data.message || 'Login successful!'
-    
-    // Redirect to home after short delay
-    setTimeout(() => {
-      router.push('/')
-    }, 1000)
+    toast.success(success.value)
+
+    // Redirect to original destination if provided
+    const redirectTo = (route.query && route.query.redirect) ? String(route.query.redirect) : '/'
+    router.push(redirectTo)
   } catch (err) {
     error.value = err.response?.data?.message || 'Login failed. Please check your credentials.'
+    toast.error(error.value)
   } finally {
     loading.value = false
   }

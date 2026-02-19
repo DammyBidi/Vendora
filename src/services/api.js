@@ -8,10 +8,25 @@ const api = axios.create({
   },
 })
 
+let _currentToken = null
+
+export function setAuthToken(token) {
+  _currentToken = token || null
+  if (token) {
+    api.defaults.headers.Authorization = `Bearer ${token}`
+  } else {
+    delete api.defaults.headers.Authorization
+  }
+}
+
+export function getAuthToken() {
+  return _currentToken
+}
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    const token = _currentToken
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -27,7 +42,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
+      // clear in-memory token
+      setAuthToken(null)
+      try { localStorage.removeItem('token') } catch (_) {}
       // Optionally redirect to login
     }
     return Promise.reject(error)

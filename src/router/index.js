@@ -7,6 +7,8 @@ import loginpage from '@/views/loginpage.vue'
 import registerpage from '@/views/registerpage.vue'
 import cartpage from '@/views/cartpage.vue'
 import wishlistpage from '@/views/wishlistpage.vue'
+import checkout from '@/views/checkout.vue'
+import account from '@/views/account.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -47,9 +49,19 @@ const router = createRouter({
       component: cartpage
     },
     {
+      path: '/checkout',
+      name: 'checkout',
+      component: checkout
+    },
+    {
       path: '/wishlist',
       name: 'wishlist',
       component: wishlistpage
+    },
+    {
+      path: '/account',
+      name: 'account',
+      component: account
     },
 
 

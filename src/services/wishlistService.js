@@ -6,11 +6,13 @@ export const wishlistService = {
   },
 
   addItem(productId) {
-    return api.post('/wishlist/items', { productId })
+    // prefer the new /wishlist/add endpoint
+    return api.post('/wishlist/add', { product_id: productId })
   },
 
   removeItem(productId) {
-    return api.delete(`/wishlist/items/${productId}`)
+    // prefer deleting at /wishlist/:id
+    return api.delete(`/wishlist/${productId}`)
   },
 
   clearWishlist() {

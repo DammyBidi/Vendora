@@ -13,8 +13,12 @@ export const cartService = {
     return api.put(`/cart/items/${itemId}`, { quantity })
   },
 
+  updateQuantity(product_id, quantity) {
+    return api.post('/cart/updateQuantity', { product_id, quantity })
+  },
+
   removeItem(itemId) {
-    return api.delete(`/cart/items/${itemId}`)
+    return api.delete(`/cart/${itemId}`)
   },
 
   clearCart() {
